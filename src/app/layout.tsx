@@ -3,6 +3,7 @@ import Navbar from '@/components/common/Navbar';
 import OnekoCat from '@/components/common/OnekoCat';
 import { Quote } from '@/components/common/Quote';
 import { ThemeProvider } from '@/components/common/ThemeProviders';
+import JsonLd from '@/components/seo/JsonLd';
 import { generateMetadata as getMetadata } from '@/config/Meta';
 import ReactLenis from 'lenis/react';
 import { ViewTransitions } from 'next-view-transitions';
@@ -19,6 +20,10 @@ export default function RootLayout({
   return (
     <ViewTransitions>
       <html lang="en" suppressHydrationWarning>
+        <head>
+          <JsonLd />
+          <link rel="manifest" href="/manifest.json" />
+        </head>
         <body className={`font-hanken-grotesk antialiased`}>
           <ThemeProvider
             attribute="class"
