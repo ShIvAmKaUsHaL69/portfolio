@@ -1,0 +1,186 @@
+---
+title: 'Building an Automated SEO Audit System with n8n and GPT'
+description: 'How I built a fully automated SEO audit pipeline using n8n, web scraping, and dual AI agents that emails you a detailed report.'
+image: '/blog/seo-audit.png'
+tags: ['automation', 'n8n', 'ai', 'seo']
+date: '2025-12-28'
+isPublished: true
+---
+
+# Automated SEO Audit with n8n + GPT
+
+Manual SEO audits are tedious. You check meta tags, analyze content, review page speed, inspect headings — and by the time you're done, you've spent hours on a single page.
+
+What if you could submit a URL and get a **complete SEO audit report emailed to you** in minutes? That's exactly what I built.
+
+## How It Works
+
+```
+Form Submission → Web Scraping → Dual AI Agents → Report Generation → Email Delivery
+```
+
+1. Submit a website URL through a simple form
+2. n8n scrapes the site for content and technical data
+3. Two specialized AI agents analyze the data
+4. A formatted report is generated
+5. The report is emailed directly to you
+
+All fully automated. Zero manual effort.
+
+## The Architecture
+
+I use two separate AI agents because SEO has two distinct dimensions:
+
+### Agent 1: Technical Audit
+
+This agent focuses on the technical health of the website:
+
+- **Meta tags** — Are title, description, and OG tags present and optimized?
+- **Heading structure** — Is there a proper H1 → H2 → H3 hierarchy?
+- **Image optimization** — Do images have alt tags? Are they properly sized?
+- **Mobile responsiveness** — Is the viewport meta tag set?
+- **Page load indicators** — Large scripts, unoptimized assets
+- **URL structure** — Clean, descriptive URLs?
+- **Internal linking** — Are pages properly interconnected?
+
+### Agent 2: Content Audit
+
+This agent evaluates the quality and SEO-friendliness of the content:
+
+- **Keyword usage** — Are target keywords present in key locations?
+- **Content length** — Is there enough content for the topic?
+- **Readability** — Is the content easy to understand?
+- **Content structure** — Are there proper sections, lists, and formatting?
+- **Call-to-actions** — Does the page guide users toward an action?
+- **Freshness** — Does the content appear up-to-date?
+
+## Building It in n8n
+
+### Node 1: Webhook (Form Trigger)
+
+The workflow starts with a webhook that receives the URL and email:
+
+```json
+{
+  "url": "https://example.com",
+  "email": "user@example.com"
+}
+```
+
+### Node 2: Web Scraper
+
+I use an HTTP Request node to fetch the page, then an HTML Extract node to pull out:
+
+- Page title and meta description
+- All heading tags (H1-H6)
+- Image count and alt text presence
+- Link count (internal vs external)
+- Full page text content
+- Script and stylesheet count
+
+### Node 3: Technical Audit Agent
+
+The scraped data is sent to GPT with a specialized prompt:
+
+```
+You are a Technical SEO Auditor. Analyze the following website data 
+and provide a detailed technical audit with scores (1-10) for each 
+category. Include specific, actionable recommendations.
+
+Website Data:
+{scraped_data}
+
+Format your response as a structured report with sections:
+1. Meta Tags Analysis
+2. Heading Structure
+3. Image Optimization
+4. Mobile Readiness
+5. Performance Indicators
+6. Overall Technical Score
+```
+
+### Node 4: Content Audit Agent
+
+Simultaneously, the content goes to a second GPT call:
+
+```
+You are a Content SEO Specialist. Analyze the following page content 
+and provide a detailed content audit with specific improvement suggestions.
+
+Page Content:
+{page_text}
+
+Format your response as:
+1. Content Quality Score
+2. Keyword Analysis
+3. Readability Assessment
+4. Structure & Formatting
+5. Content Recommendations
+6. Overall Content Score
+```
+
+### Node 5: Report Merger
+
+Both agent outputs are combined into a single formatted report using a Code node:
+
+```javascript
+const technicalAudit = $input.first().json.technical;
+const contentAudit = $input.first().json.content;
+
+const report = `
+# SEO Audit Report
+## Website: ${url}
+## Date: ${new Date().toLocaleDateString()}
+
+---
+
+## Technical Audit
+${technicalAudit}
+
+---
+
+## Content Audit
+${contentAudit}
+
+---
+
+## Summary
+Generated automatically by Shivam's SEO Audit System
+`;
+
+return [{ json: { report, email } }];
+```
+
+### Node 6: Email Delivery
+
+Finally, the report is sent via Gmail:
+
+- **To**: The email provided in the form
+- **Subject**: `SEO Audit Report — ${url}`
+- **Body**: The formatted report in HTML
+
+## Results
+
+After testing on 20+ websites:
+
+- **Average processing time**: 45 seconds
+- **Report quality**: Comparable to manual audits that take 2+ hours
+- **Cost per audit**: ~$0.03 (GPT API cost)
+
+## Lessons Learned
+
+1. **Split complex tasks into specialized agents** — One agent trying to do everything produces mediocre results. Two focused agents produce excellent results.
+
+2. **Structured prompts = structured outputs** — The more specific your prompt format, the more consistent and useful the output.
+
+3. **n8n is incredibly powerful** — The visual workflow builder makes it easy to iterate and debug. Error handling nodes catch failures gracefully.
+
+4. **Web scraping has limits** — JavaScript-rendered content won't show up in a simple HTTP request. For SPAs, you'd need a headless browser node.
+
+## Try It Yourself
+
+The beauty of n8n is that you can build this in an afternoon. Start with the webhook, add the scraper, connect GPT, and wire up email delivery. Each node is independent and testable.
+
+---
+
+*Building automation workflows? Let's chat on [LinkedIn](https://www.linkedin.com/in/shivam-kaushal-9b825a269/).*
